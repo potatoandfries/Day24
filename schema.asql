@@ -1,0 +1,25 @@
+DROP SCHEMA IF EXISTS shop;
+CREATE SCHEMA IF NOT EXISTS shop;
+USE shop;
+
+CREATE TABLE IF NOT EXISTS orders (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_date DATE DEFAULT (current_date),
+    customer_name varchar(128) NOT NULL,
+    ship_address VARCHAR(128) NOT NULL,
+    notes TEXT,
+    tax decimal(2,2) DEFAULT 0.05
+);
+
+CREATE TABLE IF NOT EXISTS order_details (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT,-- why is it this way? one to many*
+    product VARCHAR(64) NOT NULL, 
+    quantity INT NOT NULL, 
+    unit_price decimal(3,2) NOT NULL,
+    discount DECIMAL(2,2) DEFAULT 0.00,
+    CONSTRAINT fk_o_id FOREIGN KEY (order_id) REFERENCES orders(order_id)
+);
+
+GRANT ALL PRIVILEGES ON shop.* TO 'fred'@'%';
+FLUSH PRIVILEGES;
