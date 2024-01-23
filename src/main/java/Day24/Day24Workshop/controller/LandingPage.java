@@ -2,83 +2,84 @@ package Day24.Day24Workshop.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-
-import java.util.LinkedList;
-import java.util.List;
-
-import Day24.Day24Workshop.model.Order;
-import Day24.Day24Workshop.model.OrderDetail;
-import Day24.Day24Workshop.repo.OrderRepo;
-import Day24.Day24Workshop.service.OrderService;
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import Day24.Day24Workshop.errors.OrderError;
+import Day24.Day24Workshop.model.Order;
+import Day24.Day24Workshop.model.OrderDetail;
+import Day24.Day24Workshop.service.OrderService;
+import jakarta.servlet.http.HttpSession;
+
+
 
 @Controller
 public class LandingPage {
-    
-    @Autowired
-    OrderService svc;
 
     @Autowired
-    OrderRepo repo;
+    private OrderService orderService;
 
-    @GetMapping(path={"/"})
-    public ModelAndView showForm() {
-        ModelAndView mav = new ModelAndView("index");
-        Order order = new Order(); // Assuming this initializes an empty Order object
-        mav.addObject("order", order); // Changed from "Order" to "order"
+    @GetMapping("/")
+    public ModelAndView showLandingPage() {
+        ModelAndView mav = new ModelAndView("index"); // index.html
+        mav.addObject("orderdetail", new OrderDetail()); // Add an empty OrderDetail to the model
         return mav;
     }
 
-    @PostMapping(path={"/order"}, consumes = "application/x-www-form-urlencoded")
-    public ModelAndView register(@ModelAttribute("order") Order order, HttpSession session){
-        try {
-            System.out.println("Submitted data: " + order);
-            svc.createOrder(order);
-            
-            // Store the order in the session
-            session.setAttribute("order", order);
-            
-            return new ModelAndView("redirect:/submit");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ModelAndView("error");
+    @PostMapping("/order")
+    public ModelAndView addProduct(@ModelAttribute("orderdetail") OrderDetail orderDetail, HttpSession session) {
+        ModelAndView mav = new ModelAndView("index"); // index.html
+
+        // Handle the addition of a product (you can add it to a list in session or your data model)
+        List<OrderDetail> orderDetailsList = (List<OrderDetail>) session.getAttribute("orderDetailsList");
+        if (orderDetailsList == null) {
+            orderDetailsList = new LinkedList<>();
+            session.setAttribute("orderDetailsList", orderDetailsList);
         }
-    }
+        orderDetailsList.add(orderDetail);
 
-    @GetMapping(path={"/submit"})
-    public ModelAndView showSuccessPage() {
-        ModelAndView mav = new ModelAndView("submit");
-        OrderDetail orderDetail = new OrderDetail();
-        mav.addObject("OrderDetail", orderDetail);
+        mav.addObject("orderdetail", new OrderDetail()); // Clear the form
         return mav;
     }
 
-    @PostMapping(path={"/submit/success"}, consumes = "application/x-www-form-urlencoded")
-    public ModelAndView registerDetails(@ModelAttribute("OrderDetail") OrderDetail orderDetail, HttpSession session) {
-    Order order = (Order) session.getAttribute("order");
+    @PostMapping("/checkout")
+    public ModelAndView showCheckoutPage() {
+        ModelAndView modelAndView = new ModelAndView("checkout"); // checkout.html
+        modelAndView.addObject("order", new Order()); // Add an empty Order to the model
+        return modelAndView;
+    }
 
-    // Create a new list and store your data inside
-    List<OrderDetail> result = new LinkedList<>();
-    
-    // Add the order detail into the list
-    result.add(orderDetail);
-    
-    // Assuming you want to insert order details and get the result
-    boolean insertionResult = repo.InsertOrderItems(order.getOrder_id(), result);
+    @PostMapping("/checkout/check")
+    public ModelAndView checkout(@ModelAttribute("order") Order order, HttpSession session) {
+        ModelAndView mav = new ModelAndView("checkout"); // checkout.html
 
-    ModelAndView mav = new ModelAndView("success");
-    
-    // Add the result to the ModelAndView
-    mav.addObject("insertionResult", insertionResult);
-    
-    return mav;
+        // Retrieve the list of order details from the session
+        List<OrderDetail> orderDetailsList = (List<OrderDetail>) session.getAttribute("orderDetailsList");
+
+        if (orderDetailsList != null) {
+            // Set the list of order details in the Order object
+            order.setOd(orderDetailsList);
+        }
+
+        try {
+            // Call the service to create the order
+            boolean result = orderService.createOrder(order);
+            if (result) {
+                mav.setViewName("ok");
+                return mav;
+            } else {
+                mav.setViewName("notok");
+                return mav;
+            }
+        } catch (OrderError e) {
+            mav.addObject("errorMessage", "Error occurred during order creation.");
+        }
+
+        return mav;
+    }
 }
-
-}
-

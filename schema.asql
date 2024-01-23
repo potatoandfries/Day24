@@ -16,10 +16,12 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_id INT,-- why is it this way? one to many*
     product VARCHAR(64) NOT NULL, 
     quantity INT NOT NULL, 
-    unit_price decimal(3,2) NOT NULL,
+    unit_price decimal(3,2),
     discount DECIMAL(2,2) DEFAULT 0.00,
     CONSTRAINT fk_o_id FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
 
 GRANT ALL PRIVILEGES ON shop.* TO 'fred'@'%';
 FLUSH PRIVILEGES;
+
+
