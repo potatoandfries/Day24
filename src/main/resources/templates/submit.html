@@ -8,9 +8,6 @@
 <body>
     <form th:action="@{/submit/success}" method="POST" th:object="${orderDetail}">
        
-        <label for="order_id">Order:</label>
-        <input type="text" id="order_id" name="order_id" th:field="*{order_id}" required><br><br>
-        
         <label for="product">Product name:</label>
         <input type="text" id="product" name="product" th:field="*{product}" required><br><br>
         
